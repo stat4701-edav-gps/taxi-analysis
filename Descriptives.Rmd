@@ -6,6 +6,7 @@ output: html_document
 ---
 ```{r}
 library(dplyr)
+library(plyr)
 library(ggplot2)
 library(reshape)
 library(lubridate)
