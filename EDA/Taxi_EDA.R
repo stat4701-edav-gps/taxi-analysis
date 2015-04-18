@@ -58,6 +58,9 @@ length(type)
 
 length(unique(july$type)) #pickup and dropoff types
 
+# Remove observations with 0 building height
+samp.july <- subset(samp.july, samp.july$dist_bldg_hgh > 0)
+
 # Summary stats
 taxi.vars <- cbind(dbv, distr)
 stat.desc(taxi.vars)
@@ -192,3 +195,4 @@ summary(logit)
 confint(logit)
 exp(coef(logit))
 exp(cbind(OR = coef(logit), confint(logit)))
+
