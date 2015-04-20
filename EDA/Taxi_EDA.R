@@ -14,6 +14,7 @@ library(spdep)
 library(psych)
 library(prettyR)
 library(pastecs)
+library(gmodels)
 options(scipen = 20) # Turn off scientific notation
 
 # Read data
@@ -160,7 +161,7 @@ p4
 
 # Sample restricted to observations outside the roadbed
 offroad <- subset(samp.july, 
-                  dist_roadbed >0)#sample that includes only observations outside the roadbed
+           dist_roadbed >0)#sample that includes only observations outside the roadbed
 
 p6 <- ggplot(offroad, aes(dist_roadbed, 
                             dist_bldg_hght))
@@ -178,14 +179,40 @@ p6 <- p6 + theme(panel.border = element_blank()) #removes border
 p6 <- p6 + theme(axis.line = element_line(colour = "black")) #adds lines
 p6
 
+# Bivariates
+ct <- samp.july
+ct$height1.cat[samp.july$dist_bldg_hght<10] <- "low" #lowest 
+ct$height1.cat[samp.july$dist_bldg_hght>=10] <- "high"
+tbl <- table(ct$error, ct$height.cat) 
+tbl2 <- CrossTable(ct$error, ct$height.cat) 
+chisq.test(tbl) 
+
+ct$height2.cat[samp.july$dist_bldg_hght<18] <- "low" #bottom half
+ct$height2.cat[samp.july$dist_bldg_hght>=18] <- "high"
+tbl <- table(ct$error, ct$height2.cat) 
+ctbl1 <- CrossTable(ct$error, ct$height2.cat) 
+chisq.test(tbl) 
+
+ct$height2.cat[samp.july$dist_bldg_hght<18] <- "low" #bottom half
+ct$height2.cat[samp.july$dist_bldg_hght>=18] <- "high"
+tbl2 <- table(ct$error, ct$height2.cat) 
+ctbl2 <- CrossTable(ct$error, ct$height2.cat) 
+chisq.test(tbl) 
+
+ct$height3.cat[samp.july$dist_bldg_hght<10] <- "low" #biggest diff
+ct$height3.cat[samp.july$dist_bldg_hght>=34] <- "high"
+tbl3 <- table(ct$error, ct$height3.cat) 
+ctbl3 <- CrossTable(ct$error, ct$height3.cat) 
+chisq.test(tbl) 
+
 # Models
 # linear
 fit1 <- lm(samp.july$dist_bldg_hght ~ samp.july$dist_roadbed)
-summary(fit1) #r=0.000685
+summary(fit1) # all data points
 
 #Restricted to only observations off roadbed
 fit2 <- lm(offroad$dist_bldg_hght ~ offroad$dist_roadbed)
-summary(fit2) #r=0.001719
+summary(fit2) 
 
 # Logistic
 samp.july$error <- 0 + (samp.july$dist_roadbed>0)
@@ -196,3 +223,9 @@ confint(logit)
 exp(coef(logit))
 exp(cbind(OR = coef(logit), confint(logit)))
 
+#highest lowest quartiles
+offroad$height3.cat[offroad$dist_bldg_hght<10] <- 0 #biggest diff
+offroad$height3.cat[offroad$dist_bldg_hght>=34] <- 1
+logit <- glm(error ~ height3.cat, 
+             data = offroad, family = "binomial")
+summary(logit)
