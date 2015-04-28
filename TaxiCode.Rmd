@@ -1,0 +1,73 @@
+---
+title: "Spatial Code"
+author: "Emilie Bruzelius"
+date: "April 22, 2015"
+output: html_document
+---
+
+```{r}
+rm(list=ls())
+list_projects()
+```
+
+Read and plot block shapefile
+```{r}
+library(rgdal)
+library(ggplot2)
+block <- readOGR(dsn = '/Users/emiliebruzelius/Desktop/git/taxi/taxi/nycb2010_15a', layer = 'nycb2010')
+ggplot() +  geom_polygon(data=block, aes(x=long, y=lat, group=group))
+```
+
+Create neighbors
+```{r}
+library(sp)
+library(spdep)
+length(block)
+block.nb <- poly2nb(block)
+head(block.nb)
+plot(block.nb, coordinates(block), 
+     col = "red", pch = ".")
+plot(block, add = T)
+
+coords <- coordinates(block)
+IDs <- row.names(coords)
+
+block.nb3 <- graph2nb(gabrielneigh(coords), 
+                      row.names = IDs)
+plot(block.nb3, coords, pch = ".", col = "red")
+plot(block.nb3, add = T)
+```
+
+Create block weights
+```{r}
+block.wts <- nb2listw(block.nb3, 
+                      zero.policy = T, style = "B")
+print(block.wts, zero.policy = T)
+names(block.wts)
+```
+
+Moran's Scatterplot
+```{r}
+set.seed(987654)
+n <- length(block.nb3)
+uncorr.x <- rnorm(n)
+rho <- 0.05
+autocorr.x <- invIrW(block.wts, rho, 
+                     feasible = TRUE) %*% uncorr.x
+plot(autocorr.x, lag(nycZIPS.wts, autocorr.x), 
+     xlab = "autocorrelated random variable",
+     ylab = "spatial lag", 
+     main = "Autocorrelated random variable",
+     cex.main = 0.8, cex.lab = 0.8)
+```
+
+Moran's I
+```{r}
+moran.x <- moran.test(autocorr.x, 
+                      listw = block.wts, zero.policy = T)
+moran.x
+summary(moran.x)
+moran.x$p.value
+```
+
+

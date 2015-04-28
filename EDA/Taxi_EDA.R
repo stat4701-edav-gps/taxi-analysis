@@ -75,9 +75,17 @@ mean(dbv, trim = .1)
 mean(distr, trim = .05) #trimmed means - distance from roadbed
 mean(distr, trim = .1)
 
-boxplot(distr, #boxplot - distance to roadbed
+boxplot(july$dist_roadbed, #boxplot - distance to roadbed
         ylab='Distance to Roadbed', 
-        main= 'Box Plot of Distance to Roadbed in NYC')
+        main= 'Box Plot of GPS Error (Distance to Roadbed)\nin NYC')
+
+offroad <- subset(july, 
+                  dist_roadbed >3)#sample that includes only observations outside the roadbed
+
+boxplot(offroad$dist_roadbed, #boxplot - no errors
+        ylab='Distance to Roadbed', 
+        main= 'Box Plot of GPS Error (Distance to Roadbed)\nin NYC')
+
 
 boxplot(dbv, #boxplot - block building volume
         ylab='Block Level DBV', 
@@ -113,7 +121,7 @@ p1
 p2 <- ggplot(samp.july, aes(dist_roadbed, dist_bldg_hght))
 p2 <- p2 + geom_point()
 p2 <- p2 + stat_smooth(method="lm", se=FALSE)
-p1 <- p1 + abline(0,1) 
+p1 <- p2 + abline(0,1) 
 p2 <- p2 + ylim(0,100) 
 p2 <- p2 + xlim(0,100) 
 p2 <- p2 + ylab='Distributed Building Height'
@@ -214,6 +222,12 @@ summary(fit1) # all data points
 fit2 <- lm(offroad$dist_bldg_hght ~ offroad$dist_roadbed)
 summary(fit2) 
 
+# remove the likely errors in error
+offroad$dist_roadbed[offroad$dist_roadbed>=416] <- 0
+offroad$dist_roadbed[offroad$dist_roadbed<3] <- 0
+fit3 <- lm(offroad$dist_bldg_hght ~ offroad$dist_roadbed)
+summary(fit3) # all data points
+
 # Logistic
 samp.july$error <- 0 + (samp.july$dist_roadbed>0)
 logit <- glm(error ~ dist_bldg_hght, 
@@ -229,3 +243,12 @@ offroad$height3.cat[offroad$dist_bldg_hght>=34] <- 1
 logit <- glm(error ~ height3.cat, 
              data = offroad, family = "binomial")
 summary(logit)
+
+# Limit to manhattan
+july3 <- july2[grep("36061", july2$geoid, ignore.case=T),]
+july3$dist_roadbed[july3$dist_roadbed>=416] <- 0
+fit4 <- lm(july3$dist_bldg_hght ~ july3$dist_roadbed)
+summary(fit4) # all data points
+
+#BigVis
+devtools::install_github("hadley/bigvis")

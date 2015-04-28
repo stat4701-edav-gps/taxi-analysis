@@ -11,9 +11,11 @@ rm(list=ls())
 
 Read and plot block shapefile
 ```{r}
-library(rgdal)
+library(maptools)
 library(ggplot2)
-block <- readOGR(dsn = '/Users/emiliebruzelius/Desktop/git/taxi/taxi/nycb2010_15a', layer = 'nycb2010')
+
+block <- readShapePoly('/Users/emiliebruzelius/Desktop/git/taxi/taxi/nycb2010_15a/nycb2010.shp')
+
 ggplot() +  geom_polygon(data=block, 
                          aes(x=long, y=lat, group=group))
 ```
@@ -60,6 +62,8 @@ plot(autocorr.x, lag(nycZIPS.wts, autocorr.x),
      main = "Autocorrelated random variable",
      cex.main = 0.8, cex.lab = 0.8)
 ```
+
+moran.plot(outcome.variable, listw = nb2listw(neighbor.list))
 
 Moran's I
 ```{r}
