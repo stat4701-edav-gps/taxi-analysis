@@ -1,0 +1,196 @@
+---
+title: "Big Query Code""
+author: "Emilie Bruzelius"
+date: "April 26, 2015"
+output: html_document
+---
+
+```{r}
+library(bigrquery)
+library(plyr)
+library(dplyr)
+library(moments)
+library(ggplot2)
+```
+
+```{r}
+rm(list=ls())
+list_projects()
+options(scipen = 20) 
+```
+
+Read data from Big Query
+```{r}
+project <- "dazzling-will-91618" # project name
+sql_master <- "SELECT * FROM [dazzling-will-91618:taxi_all.taxi_all_2013]" # master
+sql_stats <- "SELECT * FROM [dazzling-will-91618:taxi_all.nycb2010_stats_all]" # geoid census block 2010
+sql_block <- "SELECT * FROM [taxi_all.nycb2010_stats_all] "
+sql_points <- "SELECT tuid FROM [dazzling-will-91618:taxitest.taxi5]" 
+
+dfs <- query_exec(sql_stats, project = project,)
+dfb <- query_exec(sql_block, project = project,)
+dfp <- query_exec(sql_points, project = project, max_pages = Inf)
+
+```
+
+```{r}
+# Create Sample with NAs and Zeros Removed
+dfb2 <- dfb
+dfb2$dist_bldg_hght[dfb2$dist_bldg_hght<=0] <- NA
+dfb2$count[dfb2$count<=0] <- NA
+dfb2 <- dfb2[complete.cases(dfb2), ]#drop NAs in sample
+```
+
+Exploratory analysis of Census Block Data
+Building height by block
+```{r}
+summary(dfb$dist_bldg_hght)
+mean(dfb$dist_bldg_hght, trim = .1)
+quantile(dfb$dist_bldg_hght) 
+IQR(dfb$dist_bldg_hght)
+sd(dfb$dist_bldg_hght) 
+var(dfb$dist_bldg_hght)
+skewness(dfb$dist_bldg_hght)
+kurtosis(dfb$dist_bldg_hght)
+
+# Boxplot (full dataset)
+boxplot(dfb$dist_bldg_hght,
+        ylab='Distributed Building Height', 
+        main= 'Box Plot of Distributed Building Height by Block')
+
+# Boxplot (null values removed)
+boxplot(dfb2$dist_bldg_hght,
+        ylab='Distributed Building Height', 
+        main= 'Box Plot of Distributed Building Height by Block')
+
+# Histogram (full dataset)
+p1 <- ggplot(dfb, aes(dist_bldg_hght))
+p1 <- p1 + geom_histogram(binwidth=.5, 
+      colour="black", fill="white")
+p1 <- p1 + theme_bw()
+p1 <- p1 + theme(panel.grid.major=element_blank(), 
+                 panel.grid.minor=element_blank()) 
+p1 <- p1 + theme(panel.border=element_blank()) 
+p1 <- p1 + theme(axis.line=element_line(colour="black")) 
+p1 <- p1 + xlab('Distributed Building Height')
+p1 <- p1 + ggtitle('Distribution of Distributed Building Height')
+p1
+
+# Histogram (null values removed)
+p2 <- ggplot(dfb2, aes(dist_bldg_hght))
+p2 <- p2 + geom_histogram(binwidth=.5, 
+      colour="black", fill="white")
+p2 <- p2 + theme_bw()
+p2 <- p2 + theme(panel.grid.major=element_blank(), 
+                 panel.grid.minor=element_blank()) 
+p2 <- p2 + theme(panel.border=element_blank()) 
+p2 <- p2 + theme(axis.line=element_line(colour="black")) 
+p2 <- p2 + xlab('Distributed Building Height')
+p2 <- p2 + ggtitle('Distribution of Distributed Building Volume')
+p2
+
+```
+
+Average Distance from Roadbed by block
+```{r}
+summary(dfb$avgbrdist)
+mean(dfb$avgbrdist, trim = .1)
+quantile(dfb$avgbrdist) 
+IQR(dfb$avgbrdist)
+sd(dfb$avgbrdist) 
+var(dfb$avgbrdist)
+skewness(dfb$avgbrdist)
+kurtosis(dfb$avgbrdist)
+
+# Boxplot (full dataset)
+boxplot(dfb$avgbrdist,
+        ylab='Average Distance from Roadbed', 
+        main= 'Box Plot of Distance \nfrom Roadbed - Full Sample')
+
+# Boxplot (null values removed)
+boxplot(dfb2$avgbrdist,
+        ylab='Average Distance From Roadbed', 
+        main= 'Box Plot of Distance \nfrom Roadbed - Restricted Sample')
+
+
+# Histogram (full dataset)
+p3 <- ggplot(dfb, aes(avgbrdist))
+p3 <- p3 + geom_histogram(binwidth=.5, 
+      colour="black", fill="white")
+p3 <- p3 + theme_bw()
+p3 <- p3 + theme(panel.grid.major=element_blank(), 
+                 panel.grid.minor=element_blank()) 
+p3 <- p3 + theme(panel.border=element_blank()) 
+p3 <- p3 + theme(axis.line=element_line(colour="black")) 
+p3 <- p3 + xlab('Distance from Roadbed) 
+p3 <- p3 + ggtitle('Distribution of Average Distance from Roadbed')
+p3
+
+# Histogram (null values removed)
+p4 <- ggplot(dfb2, aes(avgbrdist))
+p4 <- p4 + geom_histogram(binwidth=.5, 
+      colour="black", fill="white")
+p4 <- p4 + theme_bw()
+p4 <- p4 + theme(panel.grid.major=element_blank(), 
+                 panel.grid.minor=element_blank()) 
+p4 <- p4 + theme(panel.border=element_blank()) 
+p4 <- p4 + theme(axis.line=element_line(colour="black")) 
+p4 <- p4 + xlab('Distance to Roadbed')
+p4 <- p4 + ggtitle('Distribution of Distance to Roadbed')
+p4
+
+qqnorm(dfb2$avgbrdist, 
+       ylab='Distance to Roadbed', 
+       main= 'Q-Q Plot of Distance to Roadbed')
+```
+
+Pick-up and drop off count by block
+```{r}
+summary(dfb$count)
+mean(dfb$count, trim = .1)
+boxplot(dfb$count, #boxplot - distance to roadbed
+        ylab='Drop Off and Pick Ups by Block', 
+        main= 'Box Plot of Drop Off and Pick Ups by Block')
+hist(dfb$count)
+```
+
+Building count by block
+```{r}
+summary(dfb$countbldg)
+length(dfb$countbldg[dfb$countbldg==0])
+length(dfb$countbldg[dfb$countbldg==1])
+boxplot(dfb$countbldg, #boxplot - distance to roadbed
+        ylab='Number of Buildings per Census Block', 
+        main= 'Box Plot of Buildings per Census Block')
+```
+
+Percent building coverage by block
+```{r}
+summary(dfb$pctcbbldg)
+summary(dfb2$pctcbbldg)
+boxplot(dfb2$pctcbbldg, #boxplot - distance to roadbed
+        ylab='Percent of Block Covered by Building Footprint', 
+        main= 'Box Plot of Percent Footprint Coverage')
+
+```
+
+
+```{r}
+dfb2$mavgbrdist <- dfb2$avgbrdist*0.3048
+dfb2$logavgbrdist <- log(dfb2$logavgbrdist)
+```
+
+
+```{r}
+dfb2$logavgbrdist <- dfb2$avgbrdist + .00000001
+dfb2$logavgbrdist <- log(dfb2$logavgbrdist)
+```
+
+```{r}
+fit1 <- lm(dfb2$dist_bldg_hght ~ dfb2$logavgbrdist)
+summary(fit1) 
+confint(fit1, level=0.95)
+```
+
+vgbrdist * 0.3048
+
